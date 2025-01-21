@@ -23,11 +23,10 @@ from typing import Any, Mapping
 
 import torch
 import torch.distributed as dist
+
 from configs.configs_base import configs as configs_base
 from configs.configs_data import data_configs
 from configs.configs_inference import inference_configs
-from runner.dumper import DataDumper
-
 from protenix.config import parse_configs, parse_sys_args
 from protenix.data.infer_data_pipeline import get_inference_dataloader
 from protenix.model.protenix import Protenix
@@ -35,6 +34,7 @@ from protenix.utils.distributed import DIST_WRAPPER
 from protenix.utils.seed import seed_everything
 from protenix.utils.torch_utils import to_device
 from protenix.web_service.dependency_url import URL
+from runner.dumper import DataDumper
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ class InferenceRunner(object):
         self.model.configs = new_configs
 
 
-def download_infercence_cache(configs: Any, model_version: str = "v0.2.0") -> None:
+def download_infercence_cache(configs: Any, model_version: str = "v0.3.0") -> None:
 
     for cache_name in ("ccd_components_file", "ccd_components_rdkit_mol_file"):
         cur_cache_fpath = configs["data"][cache_name]
@@ -297,7 +297,7 @@ def run() -> None:
         arg_str=parse_sys_args(),
         fill_required_with_null=True,
     )
-    download_infercence_cache(configs, model_version="v0.2.0")
+    download_infercence_cache(configs, model_version="v0.3.0")
     main(configs)
 
 

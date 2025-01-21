@@ -12,6 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+2024-11-13 Modification:
+
+- GlobalAttention: removed since it is not used
+- Attention: remove 'glorot' initialization; set bias=False for all linear layers
+- LayerNorm: use an in-house version.
+
+Protenix Team
+"""
+
 import importlib
 import math
 import os
@@ -37,7 +48,6 @@ if fa_is_installed:
 
 fastln_is_installed = os.getenv("LAYERNORM_TYPE", None) == "fast_layernorm"
 if fastln_is_installed:
-    # LayerNorm is a time bottomneck, so we use a custom implementation.
     from protenix.model.layer_norm.layer_norm import FusedLayerNorm
 
 import torch
@@ -220,14 +230,28 @@ class Linear(nn.Linear):
 
 
 class OpenFoldLayerNorm(nn.Module):
-    def __init__(self, c_in, eps=1e-5):
+    def __init__(
+        self,
+        c_in,
+        create_scale: bool = True,
+        create_offset: bool = True,
+        eps=1e-5,
+    ):
         super(OpenFoldLayerNorm, self).__init__()
 
         self.c_in = (c_in,)
+        self.create_scale = create_scale
+        self.create_offset = create_offset
         self.eps = eps
 
-        self.weight = nn.Parameter(torch.ones(c_in))
-        self.bias = nn.Parameter(torch.zeros(c_in))
+        if self.create_scale:
+            self.weight = nn.Parameter(torch.ones(c_in))
+        else:
+            self.weight = None
+        if self.create_offset:
+            self.bias = nn.Parameter(torch.zeros(c_in))
+        else:
+            self.bias = None
 
     def forward(self, x):
         d = x.dtype
@@ -239,8 +263,8 @@ class OpenFoldLayerNorm(nn.Module):
                 out = nn.functional.layer_norm(
                     x,
                     self.c_in,
-                    self.weight.to(dtype=d),
-                    self.bias.to(dtype=d),
+                    self.weight.to(dtype=d) if self.weight is not None else None,
+                    self.bias.to(dtype=d) if self.bias is not None else None,
                     self.eps,
                 )
         else:
@@ -251,19 +275,25 @@ class OpenFoldLayerNorm(nn.Module):
                 self.bias,
                 self.eps,
             )
-
         return out
 
 
 # Keep the function name for code simplicity
-def LayerNorm(c_in, eps: float = 1e-5):
+def LayerNorm(
+    c_in,
+    create_scale: bool = True,
+    create_offset: bool = True,
+    eps: float = 1e-5,
+):
     # if specify "fast_layernorm" and fastln_is_installed, use the FusedLayerNorm,
     # Otherwise, OpenFoldLayerNorm is used!
     if fastln_is_installed:
         # print("use fast layernorm")
-        return FusedLayerNorm(c_in, eps)
+        return FusedLayerNorm(
+            c_in, create_scale=create_scale, create_offset=create_offset, eps=eps
+        )
     # print("use openfold layernorm")
-    return OpenFoldLayerNorm(c_in, eps)
+    return OpenFoldLayerNorm(c_in, create_scale, create_offset, eps)
 
 
 @torch.jit.ignore
@@ -413,21 +443,17 @@ class Attention(nn.Module):
         # DISCREPANCY: c_hidden is not the per-head channel dimension, as
         # stated in the supplement, but the overall channel dimension.
 
-        self.linear_q = Linear(
-            self.c_q, self.c_hidden * self.no_heads, bias=False, init="glorot"
+        self.linear_q = Linear(self.c_q, self.c_hidden * self.no_heads, bias=False)
+        self.linear_k = Linear(self.c_k, self.c_hidden * self.no_heads, bias=False)
+        self.linear_v = Linear(self.c_v, self.c_hidden * self.no_heads, bias=False)
+        self.linear_o = Linear(
+            self.c_hidden * self.no_heads, self.c_q, bias=False, init="final"
         )
-        self.linear_k = Linear(
-            self.c_k, self.c_hidden * self.no_heads, bias=False, init="glorot"
-        )
-        self.linear_v = Linear(
-            self.c_v, self.c_hidden * self.no_heads, bias=False, init="glorot"
-        )
-        self.linear_o = Linear(self.c_hidden * self.no_heads, self.c_q, init="final")
 
         self.linear_g = None
         if self.gating:
             self.linear_g = Linear(
-                self.c_q, self.c_hidden * self.no_heads, init="gating"
+                self.c_q, self.c_hidden * self.no_heads, bias=False, init="gating"
             )
 
         self.sigmoid = nn.Sigmoid()
@@ -567,95 +593,6 @@ class Attention(nn.Module):
         o = self._wrap_up(o, q_x)
 
         return o
-
-
-class GlobalAttention(nn.Module):
-    def __init__(self, c_in, c_hidden, no_heads, inf, eps):
-        super(GlobalAttention, self).__init__()
-
-        self.c_in = c_in
-        self.c_hidden = c_hidden
-        self.no_heads = no_heads
-        self.inf = inf
-        self.eps = eps
-
-        self.linear_q = Linear(c_in, c_hidden * no_heads, bias=False, init="glorot")
-
-        self.linear_k = Linear(
-            c_in,
-            c_hidden,
-            bias=False,
-            init="glorot",
-        )
-        self.linear_v = Linear(
-            c_in,
-            c_hidden,
-            bias=False,
-            init="glorot",
-        )
-        self.linear_g = Linear(c_in, c_hidden * no_heads, init="gating")
-        self.linear_o = Linear(c_hidden * no_heads, c_in, init="final")
-
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(
-        self,
-        m: torch.Tensor,
-        mask: torch.Tensor,
-        use_lma: bool = False,
-    ) -> torch.Tensor:
-        # [*, N_res, C_in]
-        q = torch.sum(m * mask.unsqueeze(-1), dim=-2) / (
-            torch.sum(mask, dim=-1)[..., None] + self.eps
-        )
-
-        # [*, N_res, H * C_hidden]
-        q = self.linear_q(q)
-        q *= self.c_hidden ** (-0.5)
-
-        # [*, N_res, H, C_hidden]
-        q = q.view(q.shape[:-1] + (self.no_heads, -1))
-
-        # [*, N_res, N_seq, C_hidden]
-        k = self.linear_k(m)
-        v = self.linear_v(m)
-
-        bias = (self.inf * (mask - 1))[..., :, None, :]
-        if not use_lma:
-            # [*, N_res, H, N_seq]
-            a = torch.matmul(
-                q,
-                k.transpose(-1, -2),  # [*, N_res, C_hidden, N_seq]
-            )
-            a += bias
-            a = softmax_no_cast(a)
-
-            # [*, N_res, H, C_hidden]
-            o = torch.matmul(
-                a,
-                v,
-            )
-        else:
-            o = _lma(
-                q, k, v, [bias], DEFAULT_LMA_Q_CHUNK_SIZE, DEFAULT_LMA_KV_CHUNK_SIZE
-            )
-
-        # [*, N_res, N_seq, C_hidden]
-        g = self.sigmoid(self.linear_g(m))
-
-        # [*, N_res, N_seq, H, C_hidden]
-        g = g.view(g.shape[:-1] + (self.no_heads, -1))
-
-        # [*, N_res, N_seq, H, C_hidden]
-        o = o.unsqueeze(-3) * g
-
-        # [*, N_res, N_seq, H * C_hidden]
-        o = o.reshape(o.shape[:-2] + (-1,))
-
-        # [*, N_res, N_seq, C_in]
-        m = self.linear_o(o)
-
-        return m
 
 
 @torch.jit.ignore

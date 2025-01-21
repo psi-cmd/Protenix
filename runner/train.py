@@ -128,11 +128,16 @@ class AF3Trainer(object):
             dist.init_process_group(
                 backend="nccl", timeout=datetime.timedelta(seconds=timeout_seconds)
             )
-        # All ddp process got the same seed
+        if not self.configs.deterministic_seed:
+            # use rank-specific seed
+            rank_seed = hash((self.configs.seed, DIST_WRAPPER.rank, "init_seed"))
+            rank_seed = rank_seed % (2**32)
+        else:
+            rank_seed = self.configs.seed
         seed_everything(
-            seed=self.configs.seed,
+            seed=rank_seed,
             deterministic=self.configs.deterministic,
-        )
+        )  # diff ddp process got diff seeds
 
         if self.configs.use_deepspeed_evo_attention:
             env = os.getenv("CUTLASS_PATH", None)
@@ -506,7 +511,7 @@ class AF3Trainer(object):
                 batch = to_device(batch, self.device)
                 self.progress_bar()
                 self.train_step(batch)
-                if use_ema:
+                if use_ema and is_update_step:
                     self.ema_wrapper.update()
                 if step_need_log or is_last_step:
                     metrics = self.train_metric_wrapper.calc()

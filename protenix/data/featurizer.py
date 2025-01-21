@@ -207,9 +207,21 @@ class Featurizer(object):
 
             # Colinear check
             if has_frame:
-                theta_degrees = angle_3p(*[ref_pos[idx] for idx in frame_atom_index])
-                if theta_degrees <= 25 or theta_degrees >= 155:
+                vec1 = ref_pos[frame_atom_index[1]] - ref_pos[frame_atom_index[0]]
+                vec2 = ref_pos[frame_atom_index[2]] - ref_pos[frame_atom_index[1]]
+                # ref_pos can be all zeros, in which case has_frame=0
+                is_zero_norm = np.isclose(
+                    np.linalg.norm(vec1, axis=-1), 0
+                ) or np.isclose(np.linalg.norm(vec2, axis=-1), 0)
+                if is_zero_norm:
                     has_frame = 0
+                else:
+                    theta_degrees = angle_3p(
+                        *[ref_pos[idx] for idx in frame_atom_index]
+                    )
+                    is_colinear = theta_degrees <= 25 or theta_degrees >= 155
+                    if is_colinear:
+                        has_frame = 0
         return has_frame, frame_atom_index
 
     @staticmethod
@@ -244,7 +256,7 @@ class Featurizer(object):
                         - has_frame: 1 if the token has frame, 0 otherwise.
                         - frame_atom_index: The index of the atoms used to construct the frame.
         """
-        token_array_w_frame = copy.deepcopy(token_array)
+        token_array_w_frame = token_array
 
         # Construct a KDTree for queries to avoid redundant distance calculations
         lig_res_ref_conf_kdtree = {}

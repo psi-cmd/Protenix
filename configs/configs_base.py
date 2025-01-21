@@ -43,6 +43,7 @@ basic_configs = {
     "wandb_id": "",
     "seed": 42,
     "deterministic": False,
+    "deterministic_seed": False,
     "ema_decay": -1.0,
     "eval_ema_only": False,  # whether wandb only tracking ema checkpoint metrics
     "ema_mutable_param_keywords": [""],
@@ -151,6 +152,8 @@ model_configs = {
     "model": {
         "N_model_seed": 1,  # for inference
         "N_cycle": 4,
+        "condition_embedding_drop_rate": 0.0,
+        "confidence_embedding_drop_rate": 0.0,
         "input_embedder": {
             "c_atom": GlobalConfigValue("c_atom"),
             "c_atompair": GlobalConfigValue("c_atompair"),
@@ -176,6 +179,7 @@ model_configs = {
             "msa_dropout": 0.15,
             "pair_dropout": 0.25,
             "blocks_per_ckpt": GlobalConfigValue("blocks_per_ckpt"),
+            "msa_chunk_size": ValueMaybeNone(2048),
         },
         "pairformer": {
             "n_blocks": GlobalConfigValue("n_blocks"),
@@ -194,17 +198,6 @@ model_configs = {
             "c_z": GlobalConfigValue("c_z"),
             "c_s": GlobalConfigValue("c_s"),
             "c_s_inputs": GlobalConfigValue("c_s_inputs"),
-            "initialization": {
-                "zero_init_condition_transition": False,
-                "zero_init_atom_encoder_residual_linear": False,
-                "he_normal_init_atom_encoder_small_mlp": False,
-                "he_normal_init_atom_encoder_output": False,
-                "glorot_init_self_attention": False,
-                "zero_init_adaln": True,
-                "zero_init_residual_condition_transition": False,
-                "zero_init_dit_output": True,
-                "zero_init_atom_decoder_linear": False,
-            },
             "atom_encoder": {
                 "n_blocks": 3,
                 "n_heads": 4,

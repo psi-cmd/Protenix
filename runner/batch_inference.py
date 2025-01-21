@@ -178,7 +178,7 @@ def get_default_runner(
     )
     if seeds is not None:
         configs.seeds = seeds
-    download_infercence_cache(configs, model_version="v0.2.0")
+    download_infercence_cache(configs, model_version="v0.3.0")
     return InferenceRunner(configs)
 
 

@@ -13,14 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""
+2024-11-13 Modification:
+
+- The 'bias' term has been removed in several linear layers.
+
+Protenix Team
+"""
+
+from abc import ABC, abstractmethod
 from functools import partialmethod
 from typing import Optional
-from abc import ABC, abstractmethod
 
 import torch
 import torch.nn as nn
 
-from protenix.openfold_local.model.primitives import Linear, LayerNorm
+from protenix.openfold_local.model.primitives import LayerNorm, Linear
 from protenix.openfold_local.utils.precision_utils import is_fp16_enabled
 from protenix.openfold_local.utils.tensor_utils import add, permute_final_dims
 
@@ -44,8 +53,8 @@ class BaseTriangleMultiplicativeUpdate(nn.Module, ABC):
         self.c_hidden = c_hidden
         self._outgoing = _outgoing
 
-        self.linear_g = Linear(self.c_z, self.c_z, init="gating")
-        self.linear_z = Linear(self.c_hidden, self.c_z, init="final")
+        self.linear_g = Linear(self.c_z, self.c_z, bias=False, init="gating")
+        self.linear_z = Linear(self.c_hidden, self.c_z, bias=False, init="final")
 
         self.layer_norm_in = LayerNorm(self.c_z)
         self.layer_norm_out = LayerNorm(self.c_hidden)
@@ -118,10 +127,10 @@ class TriangleMultiplicativeUpdate(BaseTriangleMultiplicativeUpdate):
             c_z=c_z, c_hidden=c_hidden, _outgoing=_outgoing
         )
 
-        self.linear_a_p = Linear(self.c_z, self.c_hidden)
-        self.linear_a_g = Linear(self.c_z, self.c_hidden, init="gating")
-        self.linear_b_p = Linear(self.c_z, self.c_hidden)
-        self.linear_b_g = Linear(self.c_z, self.c_hidden, init="gating")
+        self.linear_a_p = Linear(self.c_z, self.c_hidden, bias=False)
+        self.linear_a_g = Linear(self.c_z, self.c_hidden, bias=False, init="gating")
+        self.linear_b_p = Linear(self.c_z, self.c_hidden, bias=False)
+        self.linear_b_g = Linear(self.c_z, self.c_hidden, bias=False, init="gating")
 
     def _inference_forward(
         self,
@@ -220,7 +229,7 @@ class TriangleMultiplicativeUpdate(BaseTriangleMultiplicativeUpdate):
                 # This computation is chunked so as not to exceed our 2.5x
                 # budget with a large intermediate tensor
                 linear_g = self.linear_a_g if a else self.linear_b_g
-                c = linear_g.bias.shape[-1]
+                c = linear_g.weight.shape[0]
                 out_shape = pair.shape[:-3] + (c,) + pair.shape[-3:-1]
                 p = pair.new_zeros(out_shape)
                 for i in range(0, pair.shape[-3], inplace_chunk_size):
