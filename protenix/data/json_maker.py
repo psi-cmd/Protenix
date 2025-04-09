@@ -219,15 +219,9 @@ def atom_array_to_input_json(
     if inter_entity_bonds.size != 0:
         covalent_bonds = []
         for atoms in inter_entity_bonds[:, :2]:
-            entity_id1 = atom_array.label_entity_id[atoms[0]]
-            entity_id2 = atom_array.label_entity_id[atoms[1]]
-            if (entity_id1 not in label_entity_id_to_entity_id_in_json) or (
-                entity_id2 not in label_entity_id_to_entity_id_in_json
-            ):
-                continue
             bond_dict = {}
             for i in range(2):
-                positon = atom_array.res_id[idx]
+                positon = atom_array.res_id[atoms[i]]
                 bond_dict[f"entity{i+1}"] = int(
                     label_entity_id_to_entity_id_in_json[
                         atom_array.label_entity_id[atoms[i]]
@@ -257,7 +251,7 @@ def cif_to_input_json(
     altloc="first",
     output_json: str = None,
     sample_name: str = None,
-    save_entity_and_asym_id: bool=False,
+    save_entity_and_asym_id: bool = False,
 ) -> dict:
     """
     Convert mmcif file to Protenix input json file.
