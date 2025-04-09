@@ -448,52 +448,48 @@ class Featurizer(object):
         A 2D matrix indicating if there is a bond between any atom in token i and token j,
         restricted to just polymer-ligand and ligand-ligand bonds and bonds less than 2.4 Å during training.
         The size of bond feature is [N_token, N_token].
-
         Returns:
             Dict[str, torch.Tensor]: A dict of bond features.
         """
-        bond_features = {}
+        bond_array = self.cropped_atom_array.bonds.as_array()
+        bond_atom_i = bond_array[:, 0]
+        bond_atom_j = bond_array[:, 1]
+        ref_space_uid = self.cropped_atom_array.ref_space_uid
+        polymer_mask = np.isin(
+            self.cropped_atom_array.mol_type, ["protein", "dna", "rna"]
+        )
+        std_res_mask = (
+            np.isin(self.cropped_atom_array.res_name, list(STD_RESIDUES.keys()))
+            & polymer_mask
+        )
+        unstd_res_mask = ~std_res_mask & polymer_mask
+        # the polymer-polymer (std-std, std-unstd, and inter-unstd) bond will not be included in token_bonds.
+        std_std_bond_mask = std_res_mask[bond_atom_i] & std_res_mask[bond_atom_j]
+        std_unstd_bond_mask = (
+            std_res_mask[bond_atom_i] & unstd_res_mask[bond_atom_j]
+        ) | (std_res_mask[bond_atom_j] & unstd_res_mask[bond_atom_i])
+        inter_unstd_bond_mask = (
+            unstd_res_mask[bond_atom_i] & unstd_res_mask[bond_atom_j]
+        ) & (ref_space_uid[bond_atom_i] != ref_space_uid[bond_atom_j])
+        kept_bonds = bond_array[
+            ~(std_std_bond_mask | std_unstd_bond_mask | inter_unstd_bond_mask)
+        ]
+        # -1 means the atom is not in any token
+        atom_idx_to_token_idx = np.zeros(len(self.cropped_atom_array), dtype=int) - 1
+        for idx, token in enumerate(self.cropped_token_array.tokens):
+            for atom_idx in token.atom_indices:
+                atom_idx_to_token_idx[atom_idx] = idx
+        assert np.all(atom_idx_to_token_idx >= 0), "Some atoms are not in any token"
         num_tokens = len(self.cropped_token_array)
-        adj_matrix = self.cropped_atom_array.bonds.adjacency_matrix().astype(int)
-
         token_adj_matrix = np.zeros((num_tokens, num_tokens), dtype=int)
-        atom_bond_mask = adj_matrix > 0
-
-        for i in range(num_tokens):
-            atoms_i = self.cropped_token_array[i].atom_indices
-            token_i_mol_type = self.cropped_atom_array.mol_type[atoms_i[0]]
-            token_i_res_name = self.cropped_atom_array.res_name[atoms_i[0]]
-            token_i_ref_space_uid = self.cropped_atom_array.ref_space_uid[atoms_i[0]]
-            unstd_res_token_i = (
-                token_i_res_name not in STD_RESIDUES and token_i_mol_type != "ligand"
-            )
-            is_polymer_i = token_i_mol_type in ["protein", "dna", "rna"]
-
-            for j in range(i + 1, num_tokens):
-                atoms_j = self.cropped_token_array[j].atom_indices
-                token_j_mol_type = self.cropped_atom_array.mol_type[atoms_j[0]]
-                token_j_res_name = self.cropped_atom_array.res_name[atoms_j[0]]
-                token_j_ref_space_uid = self.cropped_atom_array.ref_space_uid[
-                    atoms_j[0]
-                ]
-                unstd_res_token_j = (
-                    token_j_res_name not in STD_RESIDUES
-                    and token_j_mol_type != "ligand"
-                )
-                is_polymer_j = token_j_mol_type in ["protein", "dna", "rna"]
-
-                # The polymer-polymer (std-std, std-unstd, and inter-unstd) bond will not be included in token_bonds.
-                if is_polymer_i and is_polymer_j:
-                    is_same_res = token_i_ref_space_uid == token_j_ref_space_uid
-                    unstd_res_bonds = unstd_res_token_i and unstd_res_token_j
-                    if not (is_same_res and unstd_res_bonds):
-                        continue
-
-                sub_matrix = atom_bond_mask[np.ix_(atoms_i, atoms_j)]
-                if np.any(sub_matrix):
-                    token_adj_matrix[i, j] = 1
-                    token_adj_matrix[j, i] = 1
-        bond_features["token_bonds"] = torch.Tensor(token_adj_matrix)
+        bond_token_i, bond_atom_j = (
+            atom_idx_to_token_idx[kept_bonds[:, 0]],
+            atom_idx_to_token_idx[kept_bonds[:, 1]],
+        )
+        for i, j in zip(bond_token_i, bond_atom_j):
+            token_adj_matrix[i, j] = 1
+            token_adj_matrix[j, i] = 1
+        bond_features = {"token_bonds": torch.Tensor(token_adj_matrix).long()}
         return bond_features
 
     def get_extra_features(self) -> dict[str, torch.Tensor]:
