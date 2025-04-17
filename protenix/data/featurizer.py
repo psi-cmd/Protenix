@@ -489,7 +489,7 @@ class Featurizer(object):
         for i, j in zip(bond_token_i, bond_atom_j):
             token_adj_matrix[i, j] = 1
             token_adj_matrix[j, i] = 1
-        bond_features = {"token_bonds": torch.Tensor(token_adj_matrix).long()}
+        bond_features = {"token_bonds": torch.Tensor(token_adj_matrix)}
         return bond_features
 
     def get_extra_features(self) -> dict[str, torch.Tensor]:
