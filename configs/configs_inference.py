@@ -21,7 +21,7 @@ current_file_path = os.path.abspath(__file__)
 current_directory = os.path.dirname(current_file_path)
 code_directory = os.path.dirname(current_directory)
 # The model will be download to the following dir if not exists:
-# "./release_data/checkpoint/model_v0.3.0.pt"
+# "./release_data/checkpoint/model_v0.5.0.pt"
 inference_configs = {
     "seeds": ListValue([101]),
     "dump_dir": "./output",
@@ -29,7 +29,7 @@ inference_configs = {
     "sorted_by_ranking_score": True,
     "input_json_path": RequiredValue(str),
     "load_checkpoint_path": os.path.join(
-        code_directory, "./release_data/checkpoint/model_v0.3.0.pt"
+        code_directory, "./release_data/checkpoint/model_v0.5.0.pt"
     ),
     "num_workers": 16,
     "use_msa": True,

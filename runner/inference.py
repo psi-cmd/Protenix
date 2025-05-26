@@ -162,7 +162,7 @@ class InferenceRunner(object):
         self.model.configs = new_configs
 
 
-def download_infercence_cache(configs: Any, model_version: str = "v0.3.0") -> None:
+def download_infercence_cache(configs: Any, model_version: str = "v0.5.0") -> None:
 
     for cache_name in ("ccd_components_file", "ccd_components_rdkit_mol_file"):
         cur_cache_fpath = configs["data"][cache_name]
@@ -297,7 +297,7 @@ def run() -> None:
         arg_str=parse_sys_args(),
         fill_required_with_null=True,
     )
-    download_infercence_cache(configs, model_version="v0.3.0")
+    download_infercence_cache(configs, model_version="v0.5.0")
     main(configs)
 
 
