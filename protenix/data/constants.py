@@ -292,18 +292,23 @@ RNA_STD_RESIDUES = {
     "G": 22,
     "C": 23,
     "U": 24,
-    "N": 29,
+    "N": 25,
 }
 
 DNA_STD_RESIDUES = {
-    "DA": 25,
-    "DG": 26,
-    "DC": 27,
-    "DT": 28,
+    "DA": 26,
+    "DG": 27,
+    "DC": 28,
+    "DT": 29,
     "DN": 30,
 }
 
+GAP = {"-": 31}
 STD_RESIDUES = PRO_STD_RESIDUES | RNA_STD_RESIDUES | DNA_STD_RESIDUES
+STD_RESIDUES_WITH_GAP = STD_RESIDUES | GAP
+STD_RESIDUES_WITH_GAP_ID_TO_NAME = {
+    idx: res_type for res_type, idx in STD_RESIDUES_WITH_GAP.items()
+}
 
 rna_order_with_x = {
     "A": 0,

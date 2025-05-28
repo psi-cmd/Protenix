@@ -318,7 +318,7 @@ class CIFWriter:
             entity_block_dict["pdbx_description"].append(".")
             entity_block_dict["type"].append(entity_type)
         return pdbx.CIFCategory(entity_block_dict)
-    
+
     def _get_entity_poly_and_entity_poly_seq_block(self):
         entity_poly = defaultdict(list)
         for entity_id, entity_type in self.entity_poly_type.items():
@@ -336,7 +336,7 @@ class CIFWriter:
             entity_poly["entity_id"].append(entity_id)
             entity_poly["pdbx_strand_id"].append(label_asym_ids_str)
             entity_poly["type"].append(entity_type)
-            
+
         if not entity_poly:
             return {}
 
@@ -468,11 +468,13 @@ def make_dummy_feature(
         features_dict["template_all_atom_positions"] = torch.zeros(
             feat_shape["template_all_atom_positions"]
         )
+    if features_dict["msa"].dim() < 2:
+        raise ValueError(f"msa must be 2D, get shape: {features_dict['msa'].shape}")
     return features_dict
 
 
 def data_type_transform(
-    feat_or_label_dict: Mapping[str, torch.Tensor]
+    feat_or_label_dict: Mapping[str, torch.Tensor],
 ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor], AtomArray]:
     for key, value in feat_or_label_dict.items():
         if key in IntDataList:
