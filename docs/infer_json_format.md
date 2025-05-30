@@ -205,10 +205,10 @@ The position value starts at 1 and can vary based on the type of entity:
   * For **single CCD code ligands**, or ligands defined by **SMILES** or **FILE**, the position is always set to 1.
     
 * `atom1`, `atom2` - The atom names (or atom indices) of the atoms to be bonded.
-  *  If the entity is a polymer or described by a CCD code, the atom names are consistent with those defined in the CCD.
+  * If the entity is a polymer or described by a CCD code, the atom names are consistent with those defined in the CCD.
   * If the entity is a ligand defined by SMILES or a FILE, atoms can be specified by their atom index. The atom index corresponds to the position of the atom in the file or in the SMILES string, starting from 0.
 
-Deprecation Notice: The previous fields such as old `left_entity`, `right_entity`, and other fields starting with `left`/`right` have been updated to use `1` and `2` to denote the two atoms forming a bond. The current code still supports the old field names, but they may be deprecated in the future, leaving only the new field names.
+Deprecation Notice: The previous fields such as old `left_entity`, `right_entity`, and other fields starting with `left`/`right` have been updated to use `1` and `2` to denote the two atoms forming a bond. The current code still supports the old field names, but they may be deprecated in the future, leaving only the new field names. An alternative approach is to write the element name of the specified atom in the SMILES/file, along with its sequential number for that element, e.g., "C2" indicates it is the second carbon.
 
 ### Format of the model output
 The outputs will be saved in the directory provided via the `--dump_dir` flag in the inference script. The outputs include the predicted structures in CIF format and the confidence in JSON files. The `--dump_dir` will have the following structure:
