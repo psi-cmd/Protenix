@@ -195,9 +195,9 @@ class SampleDictToFeatures:
 
                 if isinstance(atom_name, int):
                     # Convert AtomMap in SMILES to atom name in AtomArray
-                    entity_dict = self.input_dict["sequences"][
+                    entity_dict = list(self.input_dict["sequences"][
                         int(entity_id - 1)
-                    ].values()
+                    ].values())[0]
                     assert "atom_map_to_atom_name" in entity_dict
                     atom_name = entity_dict["atom_map_to_atom_name"][atom_name]
 
