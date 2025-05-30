@@ -1471,6 +1471,7 @@ class MMCIFParser:
     @staticmethod
     def add_sub_mol_type(
         atom_array: AtomArray,
+        lig_polymer_bond_chain_id: np.ndarray,
         indices_dict: dict[str, Any],
     ) -> dict[str, Any]:
         """
@@ -1505,18 +1506,11 @@ class MMCIFParser:
         Args:
             atom_array (AtomArray): Biotite AtomArray object of bioassembly.
             indices_dict (dict[str, Any]): A dict of chain or interface indices info.
+            lig_polymer_bond_chain_id (np.ndarray): a chain id list of ligands that are bonded to polymer.
 
         Returns:
             dict[str, Any]: A dict of chain or interface indices info with "sub_mol_[i]_type" field.
         """
-        polymer_lig_bonds = get_ligand_polymer_bond_mask(atom_array)
-        if len(polymer_lig_bonds) == 0:
-            lig_polymer_bond_chain_id = []
-        else:
-            lig_polymer_bond_chain_id = atom_array.chain_id[
-                np.unique(polymer_lig_bonds[:, :2])
-            ]
-
         for i in ["1", "2"]:
             if indices_dict[f"entity_{i}_id"] == "":
                 indices_dict[f"sub_mol_{i}_type"] = ""
@@ -1535,7 +1529,7 @@ class MMCIFParser:
 
             if entity_type == "ligand":
                 ccd_code = indices_dict[f"cluster_{i}_id"]
-                if ccd_code in GLYCANS:
+                if any([True if i in GLYCANS else False for i in ccd_code.split("_")]):
                     indices_dict[f"sub_mol_{i}_type"] = "glycans"
 
                 elif ccd_code in LIGAND_EXCLUSION:
@@ -1548,7 +1542,7 @@ class MMCIFParser:
 
             elif entity_type == "prot":
                 # glycosylation
-                if np.any(np.isin([mol_all_res_name], list(GLYCANS))):
+                if np.any(np.isin(mol_all_res_name, list(GLYCANS))):
                     indices_dict[f"sub_mol_{i}_type"] = "glycosylation_prot"
 
                 if ~np.all(np.isin(chain_all_res_name, list(PRO_STD_RESIDUES.keys()))):
@@ -1574,7 +1568,7 @@ class MMCIFParser:
                     indices_dict[f"sub_mol_{i}_type"] = "dna_rna_hybrid"
 
             else:
-                indices_dict[f"sub_mol_{i}_type"] = [f"mol_{i}_type"]
+                indices_dict[f"sub_mol_{i}_type"] = indices_dict[f"mol_{i}_type"]
 
             if indices_dict.get(f"sub_mol_{i}_type") is None:
                 indices_dict[f"sub_mol_{i}_type"] = indices_dict[f"mol_{i}_type"]
@@ -1664,6 +1658,15 @@ class MMCIFParser:
             interface_dict["type"] = "interface"
             sample_indices_list.append(interface_dict)
 
+        # for add_sub_mol_type
+        polymer_lig_bonds = get_ligand_polymer_bond_mask(atom_array)
+        if len(polymer_lig_bonds) == 0:
+            lig_polymer_bond_chain_id = []
+        else:
+            lig_polymer_bond_chain_id = atom_array.chain_id[
+                np.unique(polymer_lig_bonds[:, :2])
+            ]
+
         for indices in sample_indices_list:
             for i in ["1", "2"]:
                 chain_id = indices[f"chain_{i}_id"]
@@ -1679,7 +1682,9 @@ class MMCIFParser:
                 indices["mol_type_group"] = "_".join(
                     sorted([indices["mol_1_type"], indices["mol_2_type"]])
                 )
-            indices = self.add_sub_mol_type(atom_array, indices)
+            indices = self.add_sub_mol_type(
+                atom_array, lig_polymer_bond_chain_id, indices
+            )
             indices = self.add_eval_type(indices)
         return sample_indices_list
 

@@ -76,8 +76,8 @@ def atom_array_to_input_json(
     parser: MMCIFParser,
     assembly_id: str = None,
     output_json: str = None,
-    sample_name=None,
-    save_entity_and_asym_id=False,
+    sample_name: str = None,
+    save_entity_and_asym_id: bool = False,
 ) -> dict:
     """
     Convert a Biotite AtomArray to a dict that can be used as input to the model.
@@ -87,7 +87,7 @@ def atom_array_to_input_json(
         parser (MMCIFParser): Instantiated Protenix MMCIFParer.
         assembly_id (str, optional): Assembly ID. Defaults to None.
         output_json (str, optional): Output json file path. Defaults to None.
-        sample_name (_type_, optional): The "name" filed in json file. Defaults to None.
+        sample_name (str, optional): The "name" filed in json file. Defaults to None.
         save_entity_and_asym_id (bool, optional): Whether to save entity and asym ids to json.
                                                   Defaults to False.
 
@@ -136,11 +136,8 @@ def atom_array_to_input_json(
         json_dict["assembly_id"] = assembly_id
 
     unique_label_entity_id = np.unique(atom_array.label_entity_id)
-    label_entity_id_to_entity_id_in_json = {}
     chain_id_to_copy_id_dict = {}
-    for idx, label_entity_id in enumerate(unique_label_entity_id):
-        entity_id_in_json = str(idx + 1)
-        label_entity_id_to_entity_id_in_json[label_entity_id] = entity_id_in_json
+    for label_entity_id in unique_label_entity_id:
         chain_ids_in_entity = chain_starts_atom_array.chain_id[
             chain_starts_atom_array.label_entity_id == label_entity_id
         ]
@@ -150,7 +147,8 @@ def atom_array_to_input_json(
     atom_array.set_annotation("copy_id", copy_id)
 
     all_entity_counts = {}
-    skipped_entity_id = []
+    label_entity_id_to_entity_id_in_json = {}
+    entity_idx = 0
     for label_entity_id in unique_label_entity_id:
         entity_dict = {}
         asym_chains = chain_starts_atom_array[
@@ -166,7 +164,6 @@ def atom_array_to_input_json(
                 entity_type = "rnaSequence"
             else:
                 # DNA/RNA hybrid, polypeptide(D), etc.
-                skipped_entity_id.append(label_entity_id)
                 continue
 
             sequence = entity_seq.get(label_entity_id)
@@ -176,9 +173,10 @@ def atom_array_to_input_json(
             lig_ccd = "_".join(label_entity_id_to_sequences[label_entity_id])
             entity_dict["ligand"] = f"CCD_{lig_ccd}"
         entity_dict["count"] = len(asym_chains)
-        all_entity_counts[label_entity_id_to_entity_id_in_json[label_entity_id]] = len(
-            asym_chains
-        )
+        entity_idx += 1
+        entity_id_in_json = str(entity_idx)
+        label_entity_id_to_entity_id_in_json[label_entity_id] = entity_id_in_json
+        all_entity_counts[entity_id_in_json] = len(asym_chains)
         if save_entity_and_asym_id:
             entity_dict["label_entity_id"] = str(label_entity_id)
             entity_dict["label_asym_id"] = asym_chains.label_asym_id.tolist()
@@ -200,7 +198,12 @@ def atom_array_to_input_json(
         json_dict["sequences"].append({entity_type: entity_dict})
 
     # skip some uncommon entities
-    atom_array = atom_array[~np.isin(atom_array.label_entity_id, skipped_entity_id)]
+    atom_array = atom_array[
+        np.isin(
+            atom_array.label_entity_id,
+            list(label_entity_id_to_entity_id_in_json.keys()),
+        )
+    ]
 
     # add covalent bonds
     atom_array = AddAtomArrayAnnot.add_token_mol_type(
@@ -218,14 +221,15 @@ def atom_array_to_input_json(
         for atoms in inter_entity_bonds[:, :2]:
             bond_dict = {}
             for i in range(2):
-                atom = atom_array[atoms[i]]
-                positon = atom.res_id
+                positon = atom_array.res_id[atoms[i]]
                 bond_dict[f"entity{i+1}"] = int(
-                    label_entity_id_to_entity_id_in_json[atom.label_entity_id]
+                    label_entity_id_to_entity_id_in_json[
+                        atom_array.label_entity_id[atoms[i]]
+                    ]
                 )
                 bond_dict[f"position{i+1}"] = int(positon)
-                bond_dict[f"atom{i+1}"] = atom.atom_name
-                bond_dict[f"copy{i+1}"] = int(atom.copy_id)
+                bond_dict[f"atom{i+1}"] = atom_array.atom_name[atoms[i]]
+                bond_dict[f"copy{i+1}"] = int(atom_array.copy_id[atoms[i]])
 
             covalent_bonds.append(bond_dict)
 
@@ -246,8 +250,8 @@ def cif_to_input_json(
     assembly_id: str = None,
     altloc="first",
     output_json: str = None,
-    sample_name=None,
-    save_entity_and_asym_id=False,
+    sample_name: str = None,
+    save_entity_and_asym_id: bool = False,
 ) -> dict:
     """
     Convert mmcif file to Protenix input json file.
@@ -257,7 +261,7 @@ def cif_to_input_json(
         assembly_id (str, optional): Assembly ID. Defaults to None.
         altloc (str, optional): Altloc selection. Defaults to "first".
         output_json (str, optional): Output json file path. Defaults to None.
-        sample_name (_type_, optional): The "name" filed in json file. Defaults to None.
+        sample_name (str, optional): The "name" filed in json file. Defaults to None.
         save_entity_and_asym_id (bool, optional): Whether to save entity and asym ids to json.
                                                   Defaults to False.
 
