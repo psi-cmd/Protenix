@@ -13,13 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+2024-11-13 Modification:
+
+- The 'bias' term has been removed in several linear layers.
+- Use inhouse Layernorm in OuterProductMean to replace nn.Layernorm.
+
+Protenix Team
+"""
+
 from functools import partial
 from typing import Optional
 
 import torch
 import torch.nn as nn
 
-from protenix.openfold_local.model.primitives import Linear
+from protenix.openfold_local.model.primitives import LayerNorm, Linear
 from protenix.openfold_local.utils.chunk_utils import chunk_layer
 from protenix.openfold_local.utils.precision_utils import is_fp16_enabled
 
@@ -46,9 +55,9 @@ class OuterProductMean(nn.Module):
         self.c_hidden = c_hidden
         self.eps = eps
 
-        self.layer_norm = nn.LayerNorm(c_m)
-        self.linear_1 = Linear(c_m, c_hidden)
-        self.linear_2 = Linear(c_m, c_hidden)
+        self.layer_norm = LayerNorm(c_m)
+        self.linear_1 = Linear(c_m, c_hidden, bias=False)
+        self.linear_2 = Linear(c_m, c_hidden, bias=False)
         self.linear_out = Linear(c_hidden**2, c_z, init="final")
 
     def _opm(self, a, b):

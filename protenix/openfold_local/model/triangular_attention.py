@@ -13,17 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partialmethod, partial
-from typing import Optional, List
+from functools import partial, partialmethod
+from typing import List, Optional
 
 import torch
 import torch.nn as nn
 
-from protenix.openfold_local.model.primitives import Linear, LayerNorm, Attention
+from protenix.openfold_local.model.primitives import Attention, LayerNorm, Linear
 from protenix.openfold_local.utils.chunk_utils import chunk_layer
-from protenix.openfold_local.utils.tensor_utils import (
-    permute_final_dims,
-)
+from protenix.openfold_local.utils.tensor_utils import permute_final_dims
 
 
 class TriangleAttention(nn.Module):
@@ -47,7 +45,7 @@ class TriangleAttention(nn.Module):
 
         self.layer_norm = LayerNorm(self.c_in)
 
-        self.linear = Linear(c_in, self.no_heads, bias=False, init="normal")
+        self.linear = Linear(c_in, self.no_heads, bias=False)
 
         self.mha = Attention(
             self.c_in, self.c_in, self.c_in, self.c_hidden, self.no_heads

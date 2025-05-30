@@ -1,66 +1,84 @@
 # Protenix: Protein + X
 
-A trainable PyTorch reproduction of [AlphaFold 3](https://www.nature.com/articles/s41586-024-07487-w).
 
-For more information on the model's performance and capabilities, see our technical report ([biorxiv](https://www.biorxiv.org/content/10.1101/2025.01.08.631967v1) | [pdf](Protenix_Technical_Report.pdf)).
+<div align="center" style="margin: 20px 0;">
+  <span style="margin: 0 10px;">⚡ <a href="https://protenix-server.com">Protenix Web Server</a></span>
+  &bull; <span style="margin: 0 10px;">📄 <a href="https://www.biorxiv.org/content/10.1101/2025.01.08.631967v1">Technical Report</a></span>
+</div>
 
-You can follow our [twitter](https://x.com/ai4s_protenix) or join the conversation in the [discord server](https://discord.gg/8ZMWy89aMf).
+<div align="center">
+
+[![Twitter](https://img.shields.io/badge/Twitter-Follow-blue?logo=x)](https://x.com/ai4s_protenix)
+[![Discord](https://img.shields.io/badge/Discord-Join-blueviolet?logo=discord)](https://discord.gg/8ZMWy89aMf)
+[![Wechat](https://img.shields.io/badge/Wechat-Join-brightgreen?logo=wechat)](https://github.com/bytedance/Protenix/issues/52)
+[![Email](https://img.shields.io/badge/Contact-Email-lightgrey?logo=gmail)](#contact-us)
+</div>
+
+We’re excited to introduce **Protenix** — a trainable, open-source PyTorch reproduction of [AlphaFold 3](https://www.nature.com/articles/s41586-024-07487-w).
+
+Protenix is built for high-accuracy structure prediction. It serves as an initial step in our journey toward advancing accessible and extensible research tools for the computational biology community.
+
+
 
 ![Protenix predictions](assets/protenix_predictions.gif)
 
-**🌟🌟🌟 <ins> We have also open sourced [Protenix-Dock](https://github.com/bytedance/Protenix-Dock), our implementation of a classical protein-ligand docking framework that leverages empirical scoring functions. Without using deep neural networks, Protenix-Dock delivers competitive performance in rigid docking tasks.** </ins>
+## 🌟 Related Projects
+- **[Protenix-Dock](https://github.com/bytedance/Protenix-Dock)**: Our implementation of a classical protein-ligand docking framework that leverages empirical scoring functions. Without using deep neural networks, Protenix-Dock delivers competitive performance in rigid docking tasks.
 
-## ⚡ Try it online
-- [Web server link](https://protenix-server.com)
+## Updates
+### 🎉 Model Update
+
+- 2025-05-30: **Protenix-v0.5.0** is now available! You may try Protenix-v0.5.0 by accessing the [server](https://protenix-server.com), or upgrade to the latest version using pip.
+
+### 🔥 Feature Update
+- 2025-01-16: The preview version of [constraint feature](./README.md#early-access-to-new-constraint-feature) is released to branch [`constraint_esm`](https://github.com/bytedance/Protenix/tree/constraint_esm).
+- 2025-01-16: The [training data pipeline](./docs/prepare_training_data.md) is released.
+- 2025-01-16: The [MSA pipeline](./docs/msa_pipeline.md) is released.
+- 2025-01-16: Use [local colabfold_search](./docs/colabfold_compatiable_msa.md) to generate protenix-compatible MSA.
+
+### 📊 Benchmark
+We benchmarked the performance of Protenix-v0.5.0 against [Boltz-1](https://github.com/jwohlwend/boltz/releases/tag/v0.4.1) and [Chai-1](https://github.com/chaidiscovery/chai-lab/releases/tag/v0.6.1) across multiple datasets, including [PoseBusters v2](https://arxiv.org/abs/2308.05777), [AF3 Nucleic Acid Complexes](https://www.nature.com/articles/s41586-024-07487-w), [AF3 Antibody Set](https://github.com/google-deepmind/alphafold3/blob/20ad0a21eb49febcaad4a6f5d71aa6b701512e5b/docs/metadata_antibody_antigen.csv), and our curated Recent PDB set.
+<!-- 1️⃣ [PoseBusters v2](https://arxiv.org/abs/2308.05777)\
+2️⃣ [AF3 Nucleic Acid Complexes](https://www.nature.com/articles/s41586-024-07487-w)\
+3️⃣ [AF3 Antibody Set](https://github.com/google-deepmind/alphafold3/blob/20ad0a21eb49febcaad4a6f5d71aa6b701512e5b/docs/metadata_antibody_antigen.csv)\
+4️⃣ Our curated Recent PDB set -->
 
 
-## 🔥 Feature Update
-* 🚀 The preview version of [constraint feature](./README.md#early-access-to-new-constraint-feature) is released to branch [`constraint_esm`](https://github.com/bytedance/Protenix/tree/constraint_esm).
-* 🪐 The [training data pipeline](./docs/prepare_training_data.md) is released.
-* ⚡️  The [MSA pipeline](./docs/msa_pipeline.md) is released.
-* 🛸 Use [local colabfold_search](./docs/colabfold_compatiable_msa.md) to generate protenix-compatible MSA.
+![V0.5.0 model Metrics](assets/v0.5.0_metrics.png)
 
-## Installation
+We will soon release the benchmarking toolkit, including the evaluation datasets, data curation pipeline, and metric calculators, to support transparent and reproducible benchmarking.
 
-### Run with PyPI (recommended):
+
+## 🛠 Installation
+
+### PyPI
 
 ```bash
 pip3 install protenix
 ```
-### Run with Docker:
 
-If you're interested in model training, we recommand to [<u> run with docker</u>](docs/docker_installation.md).
-
-### Local installation (cpu only)
 For development on a CPU-only machine, it is convenient to install with the `--cpu` flag in editable mode:
 ```
 python3 setup.py develop --cpu
 ```
 
-## Inference
+### Docker (Recommended for Training)
 
-### Command line inference
+Check the detailed guide: [<u> Docker Installation</u>](docs/docker_installation.md).
 
-If you set up `Protenix` by `pip`, you can run the following command to do model inference:
 
-```bash
-# the default n_cycle/n_step/n_samples is 10/200/5 respectively, you can modify it by passing --cycle x1 --step x2 --sample x3
+## 🚀 Inference
 
-# run with example.json, which contains precomputed msa dir.
-protenix predict --input examples/example.json --out_dir  ./output --seeds 101
+### Expected Input & Output Format
+For details on the input JSON format and expected outputs, please refer to the [Input/Output Documentation](docs/infer_json_format.md).
 
-# run with multiple json files, the default seed is 101.
-protenix predict --input ./jsons_dir/ --out_dir  ./output
 
-# if the json do not contain precomputed msa dir,
-# add --use_msa_server to search msa and then predict.
-# if mutiple seeds are provided, split them by comma.
-protenix predict --input examples/example_without_msa.json --out_dir ./output --seeds 101,102 --use_msa_server
-```
+### Prepare Inputs
 
-### Convert PDB/CIF file to json
+#### Convert PDB/CIF File to Input JSON
 
-If your input is pdb or cif file, you can convert it to json file for inference.
+If your input is a `.pdb` or `.cif` file, you can convert it into a JSON file for inference.
+
 
 ```bash
 # ensure `release_data/ccd_cache/components.cif` or run:
@@ -79,37 +97,10 @@ wget https://files.rcsb.org/download/7pzb.cif
 protenix tojson --input examples/7pzb.cif --out_dir ./output
 ```
 
-### Performance details
 
-**Detailed information on the format of the input JSON file and the output files can be found in [<u> input and output documentation </u>](docs/infer_json_format.md)**.
+#### (Optional) Prepare MSA Files
 
-Alternatively you can run inference by:
-
-Note: by default, we do not use layernorm and EvoformerAttention kernels for simple configuration, if you want to speed up inference, see [<u> setting up kernels documentation </u>](docs/kernels.md).
-
-```bash
-bash inference_demo.sh
-```
-
-Arguments in this scripts are explained as follows:
-
-* `input_json_path`: path to a JSON file that fully describes the input.
-* `dump_dir`: path to a directory where the results of the inference will be saved.
-* `dtype`: data type used in inference. Valid options include `"bf16"` and `"fp32"`.
-* `use_msa`: whether to use the MSA feature, the default is true.
-* `use_esm`: whether to use the ESM feature, the default is false.
-
-
-### Convert PDB/CIF file to json
-
-If your input is pdb or cif file, you can convert it to json file for inference.
-```bash
-# run with pdb/cif file, and convert it to json file for inference.
-protenix tojson --input examples/7pzb.pdb --out_dir ./output
-```
-
-### MSA search
-We also provide an independent MSA search function, you can do msa search from json file or fasta file.
+We provide an independent MSA search utility. You can run it using either a JSON file or a protein FASTA file.
 ```bash
 # run msa search with json file, it will write precomputed msa dir info to a new json file.
 protenix msa --input examples/example_without_msa.json --out_dir ./output
@@ -118,33 +109,68 @@ protenix msa --input examples/example_without_msa.json --out_dir ./output
 protenix msa --input examples/prot.fasta --out_dir ./output
 ```
 
-### Run with PyMol
+### Inference via Command Line
 
-If you want to run Protenix inference with `PyMol`, please refer to [PyMOLfold](https://github.com/colbyford/PyMOLfold).
+If you installed `Protenix` via `pip`, you can run the following command to perform model inference:
 
-## Training
-If you're interested in model training, see [<u> training documentation </u>](docs/training.md).
 
-## Performance
-#### **Model Performance across Several Benchmarks**
-![Overall Metrics](assets/overall_metrics.png)
+```bash
+# the default n_cycle/n_step/n_samples is 10/200/5 respectively, you can modify it by passing --cycle x1 --step x2 --sample x3
 
-#### ***Early Access to NEW Constraint Feature!***
+# run with example.json, which contains precomputed msa dir.
+protenix predict --input examples/example.json --out_dir  ./output --seeds 101
 
-🎉 Protenix now allows users to specify ***contacts***, enabling the model to leverage additional inter-chain information as constraint guidance! We benchmarked our constraint feature on Posebuster and a protein-antibody interfaces subset. Protenix demonstrates powerful ability in predicting more accurate structures. If you want to have a try, checkout to branch `constraint_esm` for details about the input format.
+# run with multiple json files, the default seed is 101.
+protenix predict --input ./jsons_dir/ --out_dir  ./output
+
+# if the json do not contain precomputed msa dir,
+# add --use_msa_server to search msa and then predict.
+# if mutiple seeds are provided, split them by comma.
+protenix predict --input examples/example_without_msa.json --out_dir ./output --seeds 101,102 --use_msa_server
+```
+
+### Inference via Bash Script
+Alternatively you can run inference by:
+Alternatively, run inference via script:
+
+```bash
+bash inference_demo.sh
+```
+
+The script accepts the following arguments:
+* `input_json_path`: Path to a JSON file that fully specifies the input structure.
+* `dump_dir`: Directory where inference results will be saved.
+* `dtype`: Data type used during inference. Supported options: `bf16` and `fp32`.
+* `use_msa`: Whether to enable MSA features (default: true).
+* `use_esm`: Whether to enable ESM features (default: false).
+
+
+> **Note**: By default, layernorm and EvoformerAttention kernels are disabled for simplicity.
+> To enable them and speed up inference, see the [**Kernels Setup Guide**](docs/kernels.md).
+
+
+## 🧬 Training
+
+Refer to the [Training Documentation](docs/training.md) for setup and details.
+
+## 📌 Constraint Feature
+
+Protenix now allows users to specify ***contacts***, enabling the model to leverage additional inter-chain information as constraint guidance! We benchmarked this feature on the PoseBusters dataset and a curated protein-antibody interface subset.  Results show that Protenix can generate significantly more accurate structures when guided by constraints. You can try it out via the [`constraint_esm`](https://github.com/bytedance/Protenix/tree/constraint_esm) branch.
 
 ![Constraint Metrics](assets/constraint_metrics.png)
 
-> **Tips:** Our online service already supports the new features, so feel free to try it now! Due to the preview version, the constraint support is only applicable in the branch `constraint_esm`. If you want to run inference via the command line, please check out to this branch first.
+> **Tips:** Our online service already supports constraint inputs — no local setup required!
+However, for local command-line usage, be sure to check out the [`constraint_esm`](https://github.com/bytedance/Protenix/tree/constraint_esm) branch, as this feature is not yet included in the main branch.
+
 
 ## Training and Inference Cost
 
-See the [<u>model_train_inference_cost documentation</u>](docs/model_train_inference_cost.md) for memory and time consumption in training and inference.
+For details on memory usage and runtime during training and inference, refer to the [Training & Inference Cost Documentation](docs/model_train_inference_cost.md).
 
 
-## Citing This Work
+## Citing Protenix
 
-If you use this code or the model in your research, please cite the following paper:
+If you use Protenix in your research, please cite the following:
 
 ```
 @article{chen2025protenix,
@@ -157,25 +183,36 @@ If you use this code or the model in your research, please cite the following pa
 ```
 
 
-## Acknowledgements
+## Contributing to Protenix
 
-Implementation of the layernorm operators referred to [OneFlow](https://github.com/Oneflow-Inc/oneflow) and [FastFold](https://github.com/hpcaitech/FastFold). We used [OpenFold](https://github.com/aqlaboratory/openfold) for some [module](protenix/openfold_local/) implementations, except the [`LayerNorm`](protenix/model/layer_norm/).
+We welcome contributions from the community to help improve Protenix!
 
+📄 Check out the [Contributing Guide](CONTRIBUTING.md) to get started.
 
-## Contribution
-
-Please check [Contributing](CONTRIBUTING.md) for more details. If you encounter problems using Protenix, feel free to create an issue! We also welcome pull requests from the community.
+✅ Code Quality: 
+We use `pre-commit` hooks to ensure consistency and code quality. Please install them before making commits:
 
 ```bash
 pip install pre-commit
 pre-commit install
 ```
 
-So new commits will be automatically checked.
+🐞 Found a bug or have a feature request? [Open an issue](https://github.com/bytedance/Protenix/issues).
+
+
+
+## Acknowledgements
+
+
+The implementation of LayerNorm operators refers to both [OneFlow](https://github.com/Oneflow-Inc/oneflow) and [FastFold](https://github.com/hpcaitech/FastFold).
+We also adopted several [module](protenix/openfold_local/) implementations from [OpenFold](https://github.com/aqlaboratory/openfold), except for [`LayerNorm`](protenix/model/layer_norm/), which is implemented independently.
+
 
 ## Code of Conduct
 
-Please check [Code of Conduct](CODE_OF_CONDUCT.md) for more details.
+We are committed to fostering a welcoming and inclusive environment.
+Please review our [Code of Conduct](CODE_OF_CONDUCT.md) for guidelines on how to participate respectfully.
+
 
 ## Security
 
@@ -186,6 +223,9 @@ Please do **not** create a public GitHub issue.
 
 ## License
 
-The Protenix project, including code and model parameters, is made available under the [Apache 2.0 License](./LICENSE), it is free for both academic research and commercial use.
+The Protenix project including both code and model parameters is released under the [Apache 2.0 License](./LICENSE). It is free for both academic research and commercial use.
+
+## Contact Us
 
 We welcome inquiries and collaboration opportunities for advanced applications of our model, such as developing new features, fine-tuning for specific use cases, and more. Please feel free to contact us at ai4s-bio@bytedance.com.
+

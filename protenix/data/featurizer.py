@@ -14,14 +14,14 @@
 
 import copy
 from collections import defaultdict
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
 from biotite.structure import Atom, AtomArray, get_residue_starts
 from sklearn.neighbors import KDTree
 
-from protenix.data.constants import STD_RESIDUES, get_all_elems
+from protenix.data.constants import STD_RESIDUES, STD_RESIDUES_WITH_GAP, get_all_elems
 from protenix.data.tokenizer import Token, TokenArray
 from protenix.data.utils import get_ligand_polymer_bond_mask
 from protenix.utils.geometry import angle_3p, random_transform
@@ -49,24 +49,35 @@ class Featurizer(object):
         self.lig_atom_rename = lig_atom_rename
 
     @staticmethod
-    def encoder(encode_def_list: list[str], input_list: list[str]) -> torch.Tensor:
+    def encoder(
+        encode_def_dict_or_list: Optional[Union[dict, list[str]]], input_list: list[str]
+    ) -> torch.Tensor:
         """
         Encode a list of input values into a binary format using a specified encoding definition list.
 
         Args:
-            encode_def_list (list): A list of encoding definitions.
+            encode_def_dict_or_list (list or dict): A list or dict of encoding definitions.
             input_list (list): A list of input values to be encoded.
 
         Returns:
             torch.Tensor: A tensor representing the binary encoding of the input values.
         """
-        onehot_dict = {}
-        num_keys = len(encode_def_list)
-        for index, key in enumerate(encode_def_list):
-            onehot = [0] * num_keys
-            onehot[index] = 1
-            onehot_dict[key] = onehot
-
+        num_keys = len(encode_def_dict_or_list)
+        if isinstance(encode_def_dict_or_list, dict):
+            items = encode_def_dict_or_list.items()
+            assert (
+                num_keys == max(encode_def_dict_or_list.values()) + 1
+            ), "Do not use discontinuous number, which might causing potential bugs in the code"
+        elif isinstance(encode_def_dict_or_list, list):
+            items = ((key, idx) for idx, key in enumerate(encode_def_dict_or_list))
+        else:
+            raise TypeError(
+                "encode_def_dict_or_list must be a list or dict, "
+                f"but got {type(encode_def_dict_or_list)}"
+            )
+        onehot_dict = {
+            key: [int(i == idx) for i in range(num_keys)] for key, idx in items
+        }
         onehot_encoded_data = [onehot_dict[item] for item in input_list]
         onehot_tensor = torch.Tensor(onehot_encoded_data)
         return onehot_tensor
@@ -87,7 +98,7 @@ class Featurizer(object):
             torch.Tensor:  A Tensor of one-hot encoded residue types
         """
 
-        return Featurizer.encoder(list(STD_RESIDUES.keys()) + ["-"], restype_list)
+        return Featurizer.encoder(STD_RESIDUES_WITH_GAP, restype_list)
 
     @staticmethod
     def elem_onehot_encoded(elem_list: list[str]) -> torch.Tensor:
@@ -207,9 +218,21 @@ class Featurizer(object):
 
             # Colinear check
             if has_frame:
-                theta_degrees = angle_3p(*[ref_pos[idx] for idx in frame_atom_index])
-                if theta_degrees <= 25 or theta_degrees >= 155:
+                vec1 = ref_pos[frame_atom_index[1]] - ref_pos[frame_atom_index[0]]
+                vec2 = ref_pos[frame_atom_index[2]] - ref_pos[frame_atom_index[1]]
+                # ref_pos can be all zeros, in which case has_frame=0
+                is_zero_norm = np.isclose(
+                    np.linalg.norm(vec1, axis=-1), 0
+                ) or np.isclose(np.linalg.norm(vec2, axis=-1), 0)
+                if is_zero_norm:
                     has_frame = 0
+                else:
+                    theta_degrees = angle_3p(
+                        *[ref_pos[idx] for idx in frame_atom_index]
+                    )
+                    is_colinear = theta_degrees <= 25 or theta_degrees >= 155
+                    if is_colinear:
+                        has_frame = 0
         return has_frame, frame_atom_index
 
     @staticmethod
@@ -244,7 +267,7 @@ class Featurizer(object):
                         - has_frame: 1 if the token has frame, 0 otherwise.
                         - frame_atom_index: The index of the atoms used to construct the frame.
         """
-        token_array_w_frame = copy.deepcopy(token_array)
+        token_array_w_frame = token_array
 
         # Construct a KDTree for queries to avoid redundant distance calculations
         lig_res_ref_conf_kdtree = {}
