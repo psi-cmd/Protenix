@@ -197,15 +197,15 @@ data_configs = {
         "merge_method": "dense_max",
         "min_size": {
             "train": 1,
-            "test": 2048,
+            "test": 1,
         },
         "max_size": {
             "train": 16384,
             "test": 16384,
         },
         "sample_cutoff": {
-            "train": 2048,
-            "test": 2048,
+            "train": 16384,
+            "test": 16384,
         },
     },
     "template": {
