@@ -9,9 +9,9 @@
 <div align="center">
 
 [![Twitter](https://img.shields.io/badge/Twitter-Follow-blue?logo=x)](https://x.com/ai4s_protenix)
-[![Discord](https://img.shields.io/badge/Discord-Join-blueviolet?logo=discord)](https://discord.gg/8ZMWy89aMf)
+[![Slack](https://img.shields.io/badge/Slack-Join-yellow?logo=slack)](https://join.slack.com/t/protenixworkspace/shared_invite/zt-36j4kx1cy-GyQMWLDrMO4Wd0fjGxtxug)
 [![Wechat](https://img.shields.io/badge/Wechat-Join-brightgreen?logo=wechat)](https://github.com/bytedance/Protenix/issues/52)
-[![Email](https://img.shields.io/badge/Contact-Email-lightgrey?logo=gmail)](#contact-us)
+[![Email](https://img.shields.io/badge/Email-Contact-lightgrey?logo=gmail)](#contact-us)
 </div>
 
 We’re excited to introduce **Protenix** — a trainable, open-source PyTorch reproduction of [AlphaFold 3](https://www.nature.com/articles/s41586-024-07487-w).
