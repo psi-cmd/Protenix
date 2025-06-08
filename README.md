@@ -43,6 +43,8 @@ We benchmarked the performance of Protenix-v0.5.0 against [Boltz-1](https://gith
 3️⃣ [AF3 Antibody Set](https://github.com/google-deepmind/alphafold3/blob/20ad0a21eb49febcaad4a6f5d71aa6b701512e5b/docs/metadata_antibody_antigen.csv)\
 4️⃣ Our curated Recent PDB set -->
 
+Protenix-v0.5.0 was trained using a PDB cut-off date of September 30, 2021. For the comparative analysis, we adhered to AF3’s inference protocol, generating 25 predictions by employing 5 model seeds, with each seed yielding 5 diffusion samples. The predictions were subsequently ranked based on their respective ranking scores.
+
 
 ![V0.5.0 model Metrics](assets/v0.5.0_metrics.png)
 
