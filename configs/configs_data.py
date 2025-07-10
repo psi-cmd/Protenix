@@ -185,7 +185,7 @@ data_configs = {
             "indices_fpath": "./data/output/output.csv",
             "max_n_token": -1,
             "exclusion": {  # do not sample the data based on ions.
-                "pdb_id": ListValue(["6H0F", "6TD3", "6H0G"]),
+                "pdb_id": ListValue(["6SJ7","2P1O","2P1N","5GWP","5ZCH","7M2K","4M7E","4MDK","5GWO","7LRD","5ZCG","6XMX","6Q0R","3QEL","6Q0V","6Q0W","4TR9","6UE5","6UD7","6UML","6PAI","4LSX","6XK9","5FQD","5HXB","3OGK","3OGL","3OGM","6H0G","6TD3","6H0F"]),
             },
         },
         "cropping_configs": {
