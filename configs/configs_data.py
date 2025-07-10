@@ -112,6 +112,19 @@ if (not os.path.exists(CCD_COMPONENTS_FILE_PATH)) or (
             data_cache_dir, "components.v20240608.cif.rdkit_mol.pkl"
         )
 
+all_pdbids = ['3JRQ', '3KB3', '3KDJ', '5MN0', '3QN1', '3ZVU', '3UJL', '4OIC', '4DS8', '5JO2', '5GWO', '5GWP', '5ZCG', '5ZCH', '5ZCL', '1FAP', '1NSG', '6M4U', '2FAP', '3FAP', '4FAP', '1TCO', '6OQA', '6Q0W', '6UD7', '6SJ7', '6Q0V', '6PAI', '6Q0R', '6UE5', '1R8Q', '1S9D', '1RE0', '4G27', '4G28', '4J9Z', '4LSX', '4M7E', '4MDK', '7M2K', '7TE8', '6TD3', '3QEL', '4A69', '7LRD', '6XMX', '2O98', '3M50', '3M51', '3E6Y', '4IHL', '3IQV', '3O8I', '5MXO', '6QDS', '4JDD', '6TJM', '6TL3', '5M36', '5M37', '5EXA', '3P1O', '3SMK', '3SML', '3SMM', '3SMO', '3SMN', '3SP5', '3SPR', '3UX0', '4FR3', '6GHP', '6H0F', '6H0G', '6UML', '7BQU', '7BQV', '5HXB', '6XK9', '5FQD', '6M90', '6M91', '6M92', '6M93', '3OGK', '3OGM', '3OGL', '2P1N', '2P1O', '2P1Q', '4TR9', '1KKQ', '2OVM', '3KMZ']
+all_pdbids = [pdbid.lower() for pdbid in all_pdbids]
+
+excluded_too_large = [
+                    "6sj7","2p1o","2p1n","5gwp","5zch","7m2k","4m7e","4mdk",
+                    "5gwo","7lrd","5zcg","6xmx","6q0r","3qel","6q0v","6q0w",
+                    "4tr9","6ue5","6ud7","6uml","6pai","4lsx","6xk9","5fqd",
+                    "5hxb","3ogk","3ogl","3ogm","6h0g","6td3","6h0f", "1tco"
+                ]
+
+excluded = excluded_too_large
+# excluded = list(set(all_pdbids) - set(["1tco"]))
+
 data_configs = {
     "num_dl_workers": 16,
     "epoch_size": 10000,
@@ -185,12 +198,7 @@ data_configs = {
             "indices_fpath": "./data/output/output.csv",
             "max_n_token": -1,
             "exclusion": {  # do not sample the data based on ions.
-                "pdb_id": ListValue([
-                            "6sj7","2p1o","2p1n","5gwp","5zch","7m2k","4m7e","4mdk",
-                            "5gwo","7lrd","5zcg","6xmx","6q0r","3qel","6q0v","6q0w",
-                            "4tr9","6ue5","6ud7","6uml","6pai","4lsx","6xk9","5fqd",
-                            "5hxb","3ogk","3ogl","3ogm","6h0g","6td3","6h0f"
-                        ]),
+                "pdb_id": ListValue(excluded),
             },
         },
         "cropping_configs": {
