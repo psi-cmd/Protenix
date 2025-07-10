@@ -510,7 +510,7 @@ class AF3Trainer(object):
                 step_need_save &= is_update_step
 
                 batch = to_device(batch, self.device)
-                self.progress_bar()
+                self.progress_bar(desc=f"PDB ID: {batch['basic']['pdb_id']}")
                 self.train_step(batch)
                 if use_ema and is_update_step:
                     self.ema_wrapper.update()
