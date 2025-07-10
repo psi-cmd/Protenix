@@ -616,7 +616,7 @@ class Protenix(nn.Module):
         if self.train_confidence_only:
             # Skip diffusion loss and distogram loss. Return now.
             return pred_dict, label_dict, log_dict
-
+        breakpoint()
         # Denoising: use permuted coords to generate noisy samples and perform denoising
         # x_denoised: [..., N_sample, N_atom, 3]
         # x_noise_level: [..., N_sample]
@@ -624,7 +624,7 @@ class Protenix(nn.Module):
         drop_conditioning = (
             random.random() < self.configs.model.condition_embedding_drop_rate
         )
-        _, x_denoised, x_noise_level = autocasting_disable_decorator(
+        _, x_denoised, x_noise_level, _ = autocasting_disable_decorator(
             self.configs.skip_amp.sample_diffusion_training
         )(sample_diffusion_training)(
             noise_sampler=self.train_noise_sampler,

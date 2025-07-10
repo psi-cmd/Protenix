@@ -18,6 +18,7 @@ from protenix.config.extend_types import (
     ListValue,
     RequiredValue,
     ValueMaybeNone,
+    DefaultNoneWithType,
 )
 
 basic_configs = {
@@ -33,7 +34,7 @@ basic_configs = {
     "eval_only": False,
     "load_checkpoint_path": "",
     "load_ema_checkpoint_path": "",
-    "load_strict": True,
+    "load_strict": False,
     "load_params_only": True,
     "skip_load_step": False,
     "skip_load_optimizer": False,
@@ -85,6 +86,17 @@ optim_configs = {
     },
 }
 model_configs = {
+    # Finetune
+    "glue_env_encoder": {
+        "cutoff": 5.0,
+        "n_rbf": 16,
+        "lmax": 1,
+        "ligand_encoder_out_scalar_dim": 32,
+        "scalar_encoder_out_scalar_dim": 16,
+        "ligand_encoder_out_vector_dim": 8,
+    },
+    "finetune_cross_attn_layers": 4,
+    "finetune_cross_attn_heads": 4,
     # Model
     "c_s": 384,
     "c_z": 128,
@@ -98,9 +110,7 @@ model_configs = {
     "sigma_data": 16.0,
     "diffusion_batch_size": 48,
     "diffusion_chunk_size": ValueMaybeNone(4),  # chunksize of diffusion_batch_size
-    "blocks_per_ckpt": ValueMaybeNone(
-        1
-    ),  # NOTE: Number of blocks in each activation checkpoint, if None, no checkpointing is performed.
+    "blocks_per_ckpt": DefaultNoneWithType(int),  # NOTE: Number of blocks in each activation checkpoint, if None, no checkpointing is performed.
     # switch of kernels
     "use_memory_efficient_kernel": False,
     "use_deepspeed_evo_attention": True,

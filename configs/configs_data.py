@@ -117,12 +117,12 @@ data_configs = {
     "epoch_size": 10000,
     "train_ref_pos_augment": True,
     "test_ref_pos_augment": True,
-    "train_sets": ListValue(["weightedPDB_before2109_wopb_nometalc_0925"]),
+    "train_sets": ListValue(["molecular_glue_finetune"]),
     "train_sampler": {
         "train_sample_weights": ListValue([1.0]),
-        "sampler_type": "weighted",
+        "sampler_type": "uniform",
     },
-    "test_sets": ListValue(["recentPDB_1536_sample384_0925"]),
+    "test_sets": ListValue(["molecular_glue_finetune"]),
     "weightedPDB_before2109_wopb_nometalc_0925": {
         "base_info": {
             "mmcif_dir": os.path.join(DATA_ROOT_DIR, "mmcif"),
@@ -178,8 +178,32 @@ data_configs = {
         },
         **deepcopy(default_test_configs),
     },
+    "molecular_glue_finetune": {
+        "base_info": {
+            "mmcif_dir": "./data/raw",
+            "bioassembly_dict_dir": "./data/with_glue_mask",
+            "indices_fpath": "./data/output/output.csv",
+            "max_n_token": -1,
+        },
+        "cropping_configs": {
+            "method_weights": [
+                0.0,  # ContiguousCropping
+                0.0,  # SpatialCropping
+                1.0,  # SpatialInterfaceCropping
+            ],
+            "crop_size": -1,
+        },
+        "sampler_configs": {
+            "sampler_type": "uniform",
+        },
+        "sample_weight": 1.0,
+        "limits": -1,
+        "lig_atom_rename": False,
+        "shuffle_mols": False,
+        "shuffle_sym_ids": False,
+    },
     "msa": {
-        "enable": True,
+        "enable": False,
         "enable_rna_msa": False,
         "prot": {
             "pairing_db": "uniref100",

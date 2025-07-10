@@ -205,6 +205,7 @@ def sample_diffusion(
             )
 
             x_denoised = denoise_net(
+                x_gt_augment=x_l,
                 x_noisy=x_noisy,
                 t_hat_noise_level=t_hat,
                 input_feature_dict=input_feature_dict,
@@ -255,6 +256,7 @@ def sample_diffusion_training(
     N_sample: int = 1,
     diffusion_chunk_size: Optional[int] = None,
     use_conditioning: bool = True,
+    finetune_block: Optional[torch.Tensor] = None,
 ) -> tuple[torch.Tensor, ...]:
     """Implements diffusion training as described in AF3 Appendix at page 23.
     It performances denoising steps from time 0 to time T.
@@ -300,12 +302,14 @@ def sample_diffusion_training(
     # Get denoising outputs [..., N_sample, N_atom, 3]
     if diffusion_chunk_size is None:
         x_denoised = denoise_net(
+            x_gt_augment=x_gt_augment,
             x_noisy=x_gt_augment + noise,
             t_hat_noise_level=sigma,
             input_feature_dict=input_feature_dict,
             s_inputs=s_inputs,
             s_trunk=s_trunk,
             z_trunk=z_trunk,
+            finetune_block=finetune_block,
             use_conditioning=use_conditioning,
         )
     else:
@@ -321,15 +325,17 @@ def sample_diffusion_training(
                 ..., i * diffusion_chunk_size : (i + 1) * diffusion_chunk_size
             ]
             x_denoised_i = denoise_net(
+                x_gt_augment=x_gt_augment,
                 x_noisy=x_noisy_i,
                 t_hat_noise_level=t_hat_noise_level_i,
                 input_feature_dict=input_feature_dict,
                 s_inputs=s_inputs,
                 s_trunk=s_trunk,
                 z_trunk=z_trunk,
+                finetune_block=finetune_block,
                 use_conditioning=use_conditioning,
             )
             x_denoised.append(x_denoised_i)
         x_denoised = torch.cat(x_denoised, dim=-3)
 
-    return x_gt_augment, x_denoised, sigma
+    return x_gt_augment, x_denoised, sigma, x_gt_augment + noise

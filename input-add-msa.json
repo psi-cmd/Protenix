@@ -1,0 +1,59 @@
+[
+    {
+        "name": "8VL9",
+        "sequences": [
+            {
+                "proteinChain": {
+                    "sequence": "PVLRSVNSREPSQVIFCNRSPRVVLPVWLNFDGEPQPYPTLPPGTGRRIHSYRGHLWLFRDAGTHDGLLVNQTELFVPSLNVDGQPIFANITLPVYTLKERCLQVVRSLVKPENYRRLDIVRSLYEDLEDHPNVQKDLERLTQERIAH",
+                    "count": 1,
+                    "msa": {
+                        "precomputed_msa_dir": "/home/psi-cmd/projects/Protenix/output/8VL9/msa_resmsa_seq_0/2",
+                        "pairing_db": "uniref100"
+                    }
+                }
+            },
+            {
+                "proteinChain": {
+                    "sequence": "MDVFLMIRRHKTTIFTDAKESSTVFELKRIVEGILKRPPDEQRLYKDDQLLDDGKTLGECGFTSQTARPQAPATVGLAFRADDTFEALCIEPFSSPPELPDVMK",
+                    "count": 1,
+                    "msa": {
+                        "precomputed_msa_dir": "/home/psi-cmd/projects/Protenix/output/8VL9/msa_resmsa_seq_0/0",
+                        "pairing_db": "uniref100"
+                    }
+                }
+            },
+            {
+                "proteinChain": {
+                    "sequence": "MYVKLISSDGHEFIVKREHALTSGTIKAMLSGPGQFAENETNEVNFREIPSHVLSKVCMYFTYKVRYTNSSTEIPEFPIAPEIALELLMAANFLDC",
+                    "count": 1,
+                    "msa": {
+                        "precomputed_msa_dir": "/home/psi-cmd/projects/Protenix/output/8VL9/msa_resmsa_seq_0/1",
+                        "pairing_db": "uniref100"
+                    }
+                }
+            },
+            {
+                "proteinChain": {
+                    "sequence": "VLKPRTLADLIRILHQLFAGDEVNVEEVQAIMEAYESDPTEWAMYAKFDQYRYTRNLVDQGNGKFNLMILCWGEGHGSSIHDHTNSHCFLKMLQGNLKETLFAWPDKKSNEMVKKSERVLRENQCAYINDSIGLHRVENISHTEPAVSLHLYSPPFDTCHAFDQRTGHKNKVTMTFHSKFGIRTP",
+                    "count": 1,
+                    "msa": {
+                        "precomputed_msa_dir": "/home/psi-cmd/projects/Protenix/output/8VL9/msa_resmsa_seq_0/3",
+                        "pairing_db": "uniref100"
+                    }
+                }
+            },
+            {
+                "ligand": {
+                    "ligand": "CC(=O)N[C@H](C(=O)N1C[C@@H](C[C@H]1C(=O)NCc2ccc(c3c2cccc3)c4cc[nH]n4)O)C(C)(C)C",
+                    "count": 1
+                }
+            },
+            {
+                "ion": {
+                    "ion": "FE",
+                    "count": 1
+                }
+            }
+        ]
+    }
+]

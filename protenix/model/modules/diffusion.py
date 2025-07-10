@@ -410,6 +410,17 @@ class DiffusionModule(nn.Module):
                 self.layernorm_s(s_single)
             )  # [..., N_sample, N_token, c_token]
 
+        # split f_forward to two parts and return all things here
+        return a_token, s_single, z_pair, q_skip, c_skip, p_skip
+    
+
+    def f_forward_2(self, a_token, s_single, z_pair, q_skip, c_skip, 
+                    p_skip, inplace_safe, chunk_size, input_feature_dict):
+        
+        blocks_per_ckpt = self.blocks_per_ckpt
+        if not torch.is_grad_enabled():
+            blocks_per_ckpt = None
+        
         a_token = self.diffusion_transformer(
             a=a_token.to(dtype=torch.float32),  # Upcast all inputs
             s=s_single.to(dtype=torch.float32),
@@ -417,7 +428,7 @@ class DiffusionModule(nn.Module):
             inplace_safe=inplace_safe,
             chunk_size=chunk_size,
         )
-
+        
         a_token = self.layernorm_a(a_token)
 
         # Fine-grained checkpoint for finetuning stage 2 (token num: 768) for avoiding OOM
@@ -449,6 +460,7 @@ class DiffusionModule(nn.Module):
 
     def forward(
         self,
+        x_gt_augment: torch.Tensor,
         x_noisy: torch.Tensor,
         t_hat_noise_level: torch.Tensor,
         input_feature_dict: dict[str, Union[torch.Tensor, int, float, dict]],
@@ -458,10 +470,13 @@ class DiffusionModule(nn.Module):
         inplace_safe: bool = False,
         chunk_size: Optional[int] = None,
         use_conditioning: bool = True,
+        finetune_block: Optional[nn.Module] = None,
     ) -> torch.Tensor:
         """One step denoise: x_noisy, noise_level -> x_denoised
 
         Args:
+            x_gt_augment (torch.Tensor): the ground truth atom coords
+                [..., N_sample, N_atom,3]
             x_noisy (torch.Tensor): the noisy version of the input atom coords
                 [..., N_sample, N_atom,3]
             t_hat_noise_level (torch.Tensor): the noise level, as well as the time step t
@@ -493,7 +508,7 @@ class DiffusionModule(nn.Module):
         # Compute the update given r_noisy (the scaled x_noisy)
         # As in EDM:
         #     r_update = F(r_noisy, c_noise(sigma))
-        r_update = self.f_forward(
+        a_token, s_single, z_pair, q_skip, c_skip, p_skip = self.f_forward(
             r_noisy=r_noisy,
             t_hat_noise_level=t_hat_noise_level,
             input_feature_dict=input_feature_dict,
@@ -505,6 +520,26 @@ class DiffusionModule(nn.Module):
             use_conditioning=use_conditioning,
         )
 
+        if finetune_block is not None:
+            _, delta_pos = finetune_block(
+                input_feature_dict=input_feature_dict,
+                x_gt_augment=x_gt_augment,  # teacher forcing
+                atom_level_s=q_skip,
+                current_x=x_noisy,
+                current_t=t_hat_noise_level,
+            )
+
+        r_update = self.f_forward_2(
+            a_token=a_token,
+            s_single=s_single,
+            z_pair=z_pair,
+            q_skip=q_skip,
+            c_skip=c_skip,
+            p_skip=p_skip,
+            inplace_safe=inplace_safe,
+            chunk_size=chunk_size,
+            input_feature_dict=input_feature_dict,
+        )
         # Rescale updates to positions and combine with input positions
         # As in EDM:
         #     D = c_skip * x_noisy + c_out * r_update
@@ -517,9 +552,22 @@ class DiffusionModule(nn.Module):
         s_ratio = (t_hat_noise_level / self.sigma_data)[..., None, None].to(
             r_update.dtype
         )
-        x_denoised = (
-            1 / (1 + s_ratio**2) * x_noisy
-            + t_hat_noise_level[..., None, None] / torch.sqrt(1 + s_ratio**2) * r_update
-        ).to(r_update.dtype)
+
+        if finetune_block is not None:
+            x_denoised = (
+                1 / (1 + s_ratio**2) * x_noisy
+                + t_hat_noise_level[..., None, None] / torch.sqrt(1 + s_ratio**2) * (r_update + delta_pos)
+            ).to(r_update.dtype)
+            # logging
+            with torch.no_grad():
+                delta_amp = delta_pos.norm(dim=-1).mean()       # 均值幅度
+                rupdate_amp = r_update.norm(dim=-1).mean()
+                ratio = (delta_amp / (rupdate_amp + 1e-8)).item()
+                print(f"delta_amp: {delta_amp}, rupdate_amp: {rupdate_amp}, ratio: {ratio}")
+        else:
+            x_denoised = (
+                1 / (1 + s_ratio**2) * x_noisy
+                + t_hat_noise_level[..., None, None] / torch.sqrt(1 + s_ratio**2) * r_update
+            ).to(r_update.dtype)
 
         return x_denoised

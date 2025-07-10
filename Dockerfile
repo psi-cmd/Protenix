@@ -1,7 +1,7 @@
-FROM ai4s-cn-beijing.cr.volces.com/pytorch-mirror/pytorch:2.3.1-cuda12.1-cudnn8-devel
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Asia/Shanghai
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     wget \
@@ -49,7 +49,15 @@ RUN pip3 --no-cache-dir install \
     deepspeed>=0.15.1 \
     protobuf==3.20.2 tos icecream ipdb wandb numpy==1.26.3 matplotlib==3.9.2 ipywidgets py3Dmol
 
+RUN pip3 --no-cache-dir install \
+    torch_cluster \
+    torch_scatter \
+    e3nn>=0.5.0
+
 # For H20 compatibility
 RUN pip3 install --no-cache-dir nvidia-cublas-cu12==12.4.5.8 --no-deps
 RUN git clone  -b v3.5.1 https://github.com/NVIDIA/cutlass.git  /opt/cutlass
 ENV CUTLASS_PATH=/opt/cutlass
+
+COPY ./data/ /workspace/data/
+COPY ./release_data/ /workspace/release_data/

@@ -91,7 +91,7 @@ class BaseSingleDataset(Dataset):
         # Configs for data filters
         self.max_n_token = kwargs.get("max_n_token", -1)
         self.pdb_list = kwargs.get("pdb_list", None)
-        if len(self.pdb_list) == 0:
+        if self.pdb_list is not None and len(self.pdb_list) == 0:
             self.pdb_list = None
         # Used for removing rows in the indices list. Column names and excluded values are specified in this dict.
         self.exclusion_dict = kwargs.get("exclusion", {})

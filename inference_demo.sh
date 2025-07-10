@@ -20,7 +20,7 @@ N_step=200
 N_cycle=10
 seed=101
 
-input_json_path="./examples/example.json"
+input_json_path="./input.json"
 dump_dir="./output"
 
 python3 runner/inference.py \
@@ -29,7 +29,8 @@ python3 runner/inference.py \
 --input_json_path ${input_json_path} \
 --model.N_cycle ${N_cycle} \
 --sample_diffusion.N_sample ${N_sample} \
---sample_diffusion.N_step ${N_step}
+--sample_diffusion.N_step ${N_step} \
+--use_msa_server
 
 # The following is a demo to use DDP for inference
 # torchrun \

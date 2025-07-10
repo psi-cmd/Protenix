@@ -525,6 +525,7 @@ class Featurizer(object):
         ).long()
         extra_features["is_dna"] = torch.Tensor(self.cropped_atom_array.is_dna).long()
         extra_features["is_rna"] = torch.Tensor(self.cropped_atom_array.is_rna).long()
+        extra_features["is_glue"] = torch.Tensor(self.cropped_atom_array.is_glue).long()
         if "resolution" in self.cropped_atom_array._annot:
             extra_features["resolution"] = torch.Tensor(
                 [self.cropped_atom_array.resolution[0]]
