@@ -202,7 +202,7 @@ class AF3Trainer(object):
         if DIST_WRAPPER.rank == 0:
             path = f"{self.checkpoint_dir}/{self.step}{ema_suffix}.pt"
             checkpoint = {
-                "model": self.model.finetune_model.state_dict(),
+                "model": self.model.finetune_block.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
                 "scheduler": (
                     self.lr_scheduler.state_dict()
