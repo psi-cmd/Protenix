@@ -4,6 +4,10 @@ export USE_DEEPSPEED_EVO_ATTENTION=true
 export CUTLASS_PATH=/home/psi-cmd/projects/Protenix/cutlass_v3.3.0
 export CUDA_LAUNCH_BLOCKING=1
 
+export TORCH_EXTENSIONS_DIR=$HOME/.cache/torch_extensions   # 或任何持久路径
+export TMPDIR=$TORCH_EXTENSIONS_DIR/tmp                     # 某些库仍依赖 TMPDIR
+mkdir -p $TORCH_EXTENSIONS_DIR/tmp
+
 checkpoint_path="./release_data/checkpoint/model_v0.5.0.pt"
 
 python3 ./runner/train.py \
