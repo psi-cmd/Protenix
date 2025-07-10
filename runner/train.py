@@ -433,6 +433,10 @@ class AF3Trainer(object):
             if is_loss_nan_check(loss):
                 self.print(f"Skip iteration with NaN loss: {self.step} steps")
                 loss = torch.tensor(0.0, device=loss.device, requires_grad=True)
+
+        if not loss.requires_grad:
+            print("skip batch (no trainable param involved), pdbid: ", batch["basic"]["pdb_id"])
+            print("is_glue.sum = ", batch["input_feature_dict"]["is_glue"].sum())
         scaler.scale(loss / self.iters_to_accumulate).backward()
 
         # For simplicity, the global training step is used

@@ -13,9 +13,10 @@ python3 ./runner/train.py \
 --dtype bf16 \
 --project protenix \
 --use_wandb false \
---diffusion_batch_size 2 \
+--diffusion_batch_size 48 \
+--diffusion_chunk_size 12 \
 --eval_interval 200 \
---log_interval 50 \
+--log_interval 20 \
 --checkpoint_interval 1000 \
 --ema_decay 0.999 \
 --train_crop_size -1 \
