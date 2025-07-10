@@ -40,6 +40,8 @@ class FinetuneBlock(nn.Module):
         nn.init.zeros_(self.adapter.weight)
         nn.init.zeros_(self.adapter.bias)
 
+        self.vector_gate = nn.Parameter(torch.ones(1))
+
     def forward(self, input_feature_dict, x_gt_augment, atom_level_s, current_x, current_t):
         """
         Forward pass of the FinetuneBlock.
@@ -90,6 +92,7 @@ class FinetuneBlock(nn.Module):
 
         # 3. Adapter
         updated_scalar = self.adapter(updated_scalar)
+        delta_pos = delta_pos * self.vector_gate
 
         return updated_scalar, delta_pos
 

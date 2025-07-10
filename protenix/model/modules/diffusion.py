@@ -415,7 +415,7 @@ class DiffusionModule(nn.Module):
     
 
     def f_forward_2(self, a_token, s_single, z_pair, q_skip, c_skip, 
-                    p_skip, inplace_safe, chunk_size, input_feature_dict):
+                    p_skip, inplace_safe, chunk_size, input_feature_dict, add_to_q_skip=None):
         
         blocks_per_ckpt = self.blocks_per_ckpt
         if not torch.is_grad_enabled():
@@ -430,6 +430,9 @@ class DiffusionModule(nn.Module):
         )
         
         a_token = self.layernorm_a(a_token)
+
+        if add_to_q_skip is not None:
+            q_skip += add_to_q_skip
 
         # Fine-grained checkpoint for finetuning stage 2 (token num: 768) for avoiding OOM
         if blocks_per_ckpt and self.use_fine_grained_checkpoint:
@@ -521,13 +524,16 @@ class DiffusionModule(nn.Module):
         )
 
         if finetune_block is not None:
-            _, delta_pos = finetune_block(
+            add_to_q_skip, delta_pos = finetune_block(
                 input_feature_dict=input_feature_dict,
                 x_gt_augment=x_gt_augment,  # teacher forcing
                 atom_level_s=q_skip,
                 current_x=x_noisy,
                 current_t=t_hat_noise_level,
             )
+        else:
+            add_to_q_skip = None
+            delta_pos = None
 
         r_update = self.f_forward_2(
             a_token=a_token,
@@ -539,6 +545,7 @@ class DiffusionModule(nn.Module):
             inplace_safe=inplace_safe,
             chunk_size=chunk_size,
             input_feature_dict=input_feature_dict,
+            add_to_q_skip=add_to_q_skip,
         )
         # Rescale updates to positions and combine with input positions
         # As in EDM:
