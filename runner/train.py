@@ -594,7 +594,7 @@ class AF3Trainer(object):
                 metrics = self.train_metric_wrapper.calc()
                 # save metrics to file
                 with open("metrics.txt", "a") as f:
-                    f.write(f"Step {self.step}, {metrics}\n")
+                    f.write(f"PDB ID: {batch['basic']['pdb_id']}, {metrics}\n")
 
                 if step_need_log or is_last_step:
                     self.print(f"Step {self.step} train: {metrics}")
