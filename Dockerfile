@@ -49,10 +49,9 @@ RUN pip3 --no-cache-dir install \
     deepspeed>=0.15.1 \
     protobuf==3.20.2 tos icecream ipdb wandb numpy==1.26.3 matplotlib==3.9.2 ipywidgets py3Dmol
 
-RUN pip3 --no-cache-dir install \
-    torch_cluster \
-    torch_scatter \
-    e3nn>=0.5.0
+RUN pip3 --no-cache-dir install e3nn>=0.5.0
+RUN pip3 --no-cache-dir install torch_cluster -f https://data.pyg.org/whl/torch-2.3.1+cu121.html
+RUN pip3 --no-cache-dir install torch_scatter -f https://data.pyg.org/whl/torch-2.3.1+cu121.html
 
 # For H20 compatibility
 RUN pip3 install --no-cache-dir nvidia-cublas-cu12==12.4.5.8 --no-deps
@@ -61,3 +60,5 @@ ENV CUTLASS_PATH=/opt/cutlass
 
 COPY ./data/ /workspace/data/
 COPY ./release_data/ /workspace/release_data/
+
+RUN pip3 install nvidia-cutlass

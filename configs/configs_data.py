@@ -184,6 +184,9 @@ data_configs = {
             "bioassembly_dict_dir": "./data/with_glue_mask",
             "indices_fpath": "./data/output/output.csv",
             "max_n_token": -1,
+            "exclusion": {  # do not sample the data based on ions.
+                "pdb_id": ListValue(["6H0F", "6TD3", "6H0G"]),
+            },
         },
         "cropping_configs": {
             "method_weights": [
