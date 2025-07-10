@@ -19,7 +19,7 @@ from torch.utils.cpp_extension import load
 
 
 def compile(name, sources, extra_include_paths, build_directory):
-    os.environ["TORCH_CUDA_ARCH_LIST"] = "7.0;8.0"
+    os.environ["TORCH_CUDA_ARCH_LIST"] = "7.0;8.0;9.0"
     return load(
         name=name,
         sources=sources,
