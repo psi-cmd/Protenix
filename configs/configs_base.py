@@ -32,7 +32,10 @@ basic_configs = {
     "eval_first": False,  # run evaluate() before training steps
     "iters_to_accumulate": 1,
     "eval_only": False,
-    "load_checkpoint_path": "",
+    # New: separate checkpoint paths for backbone and finetune block
+    "base_checkpoint_path": "",      # pretrained AF3 (backbone) weights
+    "finetune_checkpoint_path": "",  # finetune_block (and optimizer) weights
+    "load_checkpoint_path": "",      # (deprecated) keep for backward compatibility
     "load_ema_checkpoint_path": "",
     "load_strict": False,
     "load_params_only": True,

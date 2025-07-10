@@ -41,6 +41,8 @@ from protenix.utils.seed import seed_everything
 from protenix.utils.torch_utils import autocasting_disable_decorator, to_device
 from protenix.utils.training import get_optimizer, is_loss_nan_check
 from runner.ema import EMAWrapper
+from torch import nn
+
 
 # Disable WANDB's console output capture to reduce unnecessary logging
 os.environ["WANDB_CONSOLE"] = "off"
@@ -200,7 +202,7 @@ class AF3Trainer(object):
         if DIST_WRAPPER.rank == 0:
             path = f"{self.checkpoint_dir}/{self.step}{ema_suffix}.pt"
             checkpoint = {
-                "model": self.model.state_dict(),
+                "model": self.model.finetune_model.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
                 "scheduler": (
                     self.lr_scheduler.state_dict()
@@ -220,6 +222,7 @@ class AF3Trainer(object):
             skip_load_optimizer: bool = False,
             skip_load_step: bool = False,
             skip_load_scheduler: bool = False,
+            target_module: nn.Module | None = None,
         ):
             if not os.path.exists(checkpoint_path):
                 raise Exception(f"Given checkpoint path not exist [{checkpoint_path}]")
@@ -235,9 +238,20 @@ class AF3Trainer(object):
                     k[len("module.") :]: v for k, v in checkpoint["model"].items()
                 }
 
-            self.model.load_state_dict(
-                state_dict=checkpoint["model"],
-                strict=self.configs.load_strict,
+            if target_module is None:
+                # load whole model
+                target_module = self.model
+
+            target_module.load_state_dict(
+                state_dict={
+                    k[len(target_module.__class__.__name__.lower()) + 1 :]
+                    if k.startswith(f"{target_module._get_name().lower()}.")
+                    else k: v
+                    for k, v in checkpoint["model"].items()
+                    if k.startswith(target_module._get_name().lower())
+                    or target_module is self.model
+                },
+                strict=False if target_module is not self.model else self.configs.load_strict,
             )
             if not load_params_only:
                 if not skip_load_optimizer:
@@ -256,16 +270,60 @@ class AF3Trainer(object):
                     self.init_scheduler(last_epoch=self.step - 1)
             self.print(f"Finish loading checkpoint, current step: {self.step}")
 
-        # Load EMA model parameters
+        # --------------------------------------------------------
+        # 1. Load backbone (pretrained) checkpoint
+        # --------------------------------------------------------
+        backbone_ckpt = self.configs.base_checkpoint_path or self.configs.load_checkpoint_path
+        if backbone_ckpt:
+            _load_checkpoint(
+                backbone_ckpt,
+                load_params_only=not self.configs.train_confidence_only,
+                skip_load_optimizer=True,
+                skip_load_scheduler=True,
+                skip_load_step=True,
+            )
+
+        # --------------------------------------------------------
+        # 2. Load finetune block specific checkpoint (optional)
+        # --------------------------------------------------------
+        if self.configs.finetune_checkpoint_path:
+            ckpt_path = self.configs.finetune_checkpoint_path
+            if not os.path.exists(ckpt_path):
+                raise Exception(f"Finetune checkpoint not found: {ckpt_path}")
+
+            # Try two formats: (a) whole model ckpt, (b) dict with finetune_block only
+            ckpt = torch.load(ckpt_path, self.device)
+            if "model" in ckpt:
+                ft_state = {
+                    k[len("finetune_block.") :]: v
+                    for k, v in ckpt["model"].items()
+                    if k.startswith("finetune_block.")
+                    or k.startswith("module.finetune_block.")
+                }
+            else:
+                # assume checkpoint itself is finetune_block's state_dict
+                ft_state = ckpt
+
+            self.print(
+                f"Loading FinetuneBlock params from {ckpt_path} (keys={len(ft_state)})"
+            )
+            self.model.finetune_block.load_state_dict(ft_state, strict=False)
+
+        # --------------------------------------------------------
+        # 3. Load EMA (if provided)
+        # --------------------------------------------------------
         if self.configs.load_ema_checkpoint_path:
             _load_checkpoint(
                 self.configs.load_ema_checkpoint_path,
                 load_params_only=True,
             )
-            self.ema_wrapper.register()
 
-        # Load model
-        if self.configs.load_checkpoint_path:
+        # Backward compatibility: if old single checkpoint path is provided and base_checkpoint_path empty
+        if (
+            self.configs.load_checkpoint_path
+            and not self.configs.base_checkpoint_path
+            and not self.configs.finetune_checkpoint_path
+        ):
             _load_checkpoint(
                 self.configs.load_checkpoint_path,
                 self.configs.load_params_only,
@@ -273,6 +331,16 @@ class AF3Trainer(object):
                 skip_load_scheduler=self.configs.skip_load_scheduler,
                 skip_load_step=self.configs.skip_load_step,
             )
+
+        # ------------------------------------------------------------------
+        # After all checkpoint loading steps, resync EMA shadow weights once
+        # so that they reflect the current model parameters. This is important
+        # because we initially called `self.ema_wrapper.register()` before
+        # loading checkpoints in `init_model`, which copied random-init weights.
+        # If an EMA wrapper exists, we update it here.
+        # ------------------------------------------------------------------
+        if hasattr(self, "ema_wrapper"):
+            self.ema_wrapper.register()
 
     def print(self, msg: str):
         if DIST_WRAPPER.rank == 0:
@@ -437,6 +505,8 @@ class AF3Trainer(object):
         if not loss.requires_grad:
             print("skip batch (no trainable param involved), pdbid: ", batch["basic"]["pdb_id"])
             print("is_glue.sum = ", batch["input_feature_dict"]["is_glue"].sum())
+            print(batch["label_dict"]["coordinate_mask"].sum(), batch["label_dict"]["lddt_mask"].sum())
+            return
         scaler.scale(loss / self.iters_to_accumulate).backward()
 
         # For simplicity, the global training step is used
@@ -514,12 +584,19 @@ class AF3Trainer(object):
                 step_need_save &= is_update_step
 
                 batch = to_device(batch, self.device)
-                self.progress_bar(desc=f"PDB ID: {batch['basic']['pdb_id']}")
+                self.progress_bar(desc=f"PDB ID: {batch['basic']['pdb_id']}, " + 
+                                  f"N_token: {batch['input_feature_dict']['residue_index'].shape[-1]}, " + 
+                                  f"N_atom: {batch['label_dict']['coordinate'].shape[-2]}")
                 self.train_step(batch)
                 if use_ema and is_update_step:
                     self.ema_wrapper.update()
+                
+                metrics = self.train_metric_wrapper.calc()
+                # save metrics to file
+                with open("metrics.txt", "a") as f:
+                    f.write(f"Step {self.step}, {metrics}\n")
+
                 if step_need_log or is_last_step:
-                    metrics = self.train_metric_wrapper.calc()
                     self.print(f"Step {self.step} train: {metrics}")
                     last_lr = self.lr_scheduler.get_last_lr()[0]
                     if DIST_WRAPPER.rank == 0:
